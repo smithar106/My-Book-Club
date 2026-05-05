@@ -1,9 +1,10 @@
 {
   "expo": {
-    "name": "my-book-club",
+    "name": "My Book Club",
     "slug": "my-book-club",
     "version": "1.0.0",
     "orientation": "portrait",
+    "scheme": "mybookclub",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
@@ -13,9 +14,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "bundleIdentifier": "com.arthursmith.mybookclub",
+      "supportsTablet": false
     },
     "android": {
+      "package": "com.arthursmith.mybookclub",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
