@@ -19,14 +19,17 @@ export default function ProfileScreen() {
     if (!session) return;
 
     const loadTasteProfile = async () => {
-      const { data } = await supabase
-        .from('taste_profiles')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .single();
+      try {
+        const { data } = await supabase
+          .from('taste_profiles')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .single();
 
-      setTaste(data as TasteProfile | null);
-      setLoading(false);
+        setTaste(data as TasteProfile | null);
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadTasteProfile();
