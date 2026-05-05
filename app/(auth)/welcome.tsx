@@ -1,14 +1,18 @@
 import { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { useRouter } from 'expo-router';
 import { supabase } from '../../src/lib/supabase';
+import { useAuthStore } from '../../src/store/auth';
 
 const VALUE_PROPS = [
   { icon: '🎯', text: 'Automatically matched with 5–7 readers who read exactly like you' },
-  { icon: '📖', text: 'A book chosen for your group's shared taste — no debates, just reading' },
+  { icon: '📖', text: "A book chosen for your group's shared taste — no debates, just reading" },
   { icon: '💬', text: 'Guided discussion prompts unlocked as you read — no group chat chaos' },
 ];
 
 export default function WelcomeScreen() {
+  const router = useRouter();
+  const { setSession } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [mode, setMode] = useState<'signin' | 'signup'>('signup');
@@ -22,11 +26,34 @@ export default function WelcomeScreen() {
     }
     setError(null);
     setLoading(true);
-    const { error: e } = mode === 'signup'
-      ? await supabase.auth.signUp({ email, password })
-      : await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (e) setError(e.message);
+
+    if (mode === 'signup') {
+      const { data, error: e } = await supabase.auth.signUp({ email, password });
+      setLoading(false);
+      if (e) { setError(e.message); return; }
+      // signUp may return a session directly (if email confirm is off) or null (confirm required)
+      if (data.session) {
+        setSession(data.session);
+        router.replace('/(auth)/onboarding');
+      } else {
+        // email confirmation required — sign them in immediately for dev
+        const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
+        if (signInErr || !signInData.session) {
+          setError('Check your email to confirm your account, then sign in.');
+          return;
+        }
+        setSession(signInData.session);
+        router.replace('/(auth)/onboarding');
+      }
+    } else {
+      const { data, error: e } = await supabase.auth.signInWithPassword({ email, password });
+      setLoading(false);
+      if (e) { setError(e.message); return; }
+      if (data.session) {
+        setSession(data.session);
+        // _layout routing guard will handle redirect to club or onboarding
+      }
+    }
   };
 
   return (
