@@ -2,7 +2,7 @@
 CREATE TABLE taste_profiles (
   user_id    uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   genres     text[]   NOT NULL DEFAULT '{}',
-  pace       text     NOT NULL DEFAULT 'medium', -- 'fast' | 'medium' | 'slow'
+  pace       text     NOT NULL DEFAULT 'medium' CHECK (pace IN ('fast', 'medium', 'slow')),
   tone       text[]   NOT NULL DEFAULT '{}',     -- 'funny' | 'dark' | 'uplifting' | 'tense'
   liked_book_ids   text[] NOT NULL DEFAULT '{}', -- book IDs from MNB Supabase
   disliked_book_ids text[] NOT NULL DEFAULT '{}',
@@ -53,10 +53,15 @@ CREATE TABLE prompt_reactions (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   prompt_id   uuid REFERENCES discussion_prompts(id) ON DELETE CASCADE,
   user_id     uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-  reaction    text NOT NULL, -- 'love' | 'confused' | 'bored'
+  reaction    text NOT NULL CHECK (reaction IN ('love', 'confused', 'bored')),
   created_at  timestamptz NOT NULL DEFAULT now(),
   UNIQUE (prompt_id, user_id)
 );
+
+-- Indexes for common query patterns
+CREATE INDEX ON club_members (user_id);
+CREATE INDEX ON discussion_prompts (club_id);
+CREATE INDEX ON reading_progress (club_id);
 
 -- RLS
 ALTER TABLE taste_profiles     ENABLE ROW LEVEL SECURITY;
@@ -65,6 +70,9 @@ ALTER TABLE club_members        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reading_progress    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE discussion_prompts  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE prompt_reactions    ENABLE ROW LEVEL SECURITY;
+
+-- Note: clubs are created exclusively by Edge Functions (service_role bypasses RLS).
+-- There is intentionally no client-side INSERT policy for clubs.
 
 -- Policies
 CREATE POLICY "own taste" ON taste_profiles FOR ALL USING (auth.uid() = user_id);
