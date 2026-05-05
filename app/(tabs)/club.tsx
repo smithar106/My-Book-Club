@@ -9,12 +9,12 @@ import type { Reaction } from '../../src/lib/types';
 
 export default function ClubScreen() {
   const { session } = useAuthStore();
-  const { club, myProgress, memberProgress, prompts, reactions, loading, load, updateProgress, react } = useClubStore();
+  const { club, myProgress, memberProgress, prompts, reactions, loading, load, updateProgress, addReaction } = useClubStore();
   const userId = session?.user.id ?? '';
 
   useEffect(() => {
     if (userId) load(userId);
-  }, [userId]);
+  }, [userId, load]);
 
   if (loading) {
     return (
@@ -64,7 +64,7 @@ export default function ClubScreen() {
           prompt={p}
           reactions={reactions}
           myReaction={reactions.find(r => r.prompt_id === p.id && r.user_id === userId)}
-          onReact={(reaction: Reaction) => react(p.id, userId, reaction)}
+          onReact={(reaction: Reaction) => addReaction(p.id, userId, reaction)}
           locked={myProgress < p.unlock_at_percent}
         />
       ))}
