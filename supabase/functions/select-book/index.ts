@@ -28,11 +28,21 @@ Deno.serve(async (req) => {
     .order('popularity_score', { ascending: false })
     .limit(50);
 
-  if (!books || books.length === 0) {
-    return new Response(JSON.stringify({ error: 'no books found' }), { status: 404 });
+  let candidateBooks = books as MnbBook[];
+  if (!candidateBooks || candidateBooks.length === 0) {
+    // Fallback: pick from top popular seed books regardless of genre
+    const { data: fallbackBooks } = await mnb.from('books')
+      .select('id, title, author_id, description, cover_url, genres, tags, themes, page_count, popularity_score, taste_vector')
+      .eq('is_seed', true)
+      .order('popularity_score', { ascending: false })
+      .limit(10);
+    if (!fallbackBooks || fallbackBooks.length === 0) {
+      return new Response(JSON.stringify({ error: 'no books found' }), { status: 404 });
+    }
+    candidateBooks = fallbackBooks as MnbBook[];
   }
 
-  const scored = (books as MnbBook[])
+  const scored = candidateBooks
     .map(b => ({ book: b, score: scoreBookForClub(b, profiles as TasteProfile[]) }))
     .sort((a, b) => b.score - a.score);
 

@@ -45,7 +45,8 @@ CREATE TABLE discussion_prompts (
   club_id     uuid REFERENCES clubs(id) ON DELETE CASCADE,
   prompt_text text NOT NULL,
   unlock_at_percent int NOT NULL DEFAULT 0,
-  created_at  timestamptz NOT NULL DEFAULT now()
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (club_id, unlock_at_percent)
 );
 
 -- Reactions to prompts
@@ -59,7 +60,7 @@ CREATE TABLE prompt_reactions (
 );
 
 -- Indexes for common query patterns
-CREATE INDEX ON club_members (user_id);
+CREATE UNIQUE INDEX ON club_members (user_id);
 CREATE INDEX ON discussion_prompts (club_id);
 CREATE INDEX ON reading_progress (club_id);
 
