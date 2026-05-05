@@ -24,12 +24,19 @@ export default function OnboardingScreen() {
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [pace, setPace] = useState<Pace>('medium');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchSeedBooks(BOOK_SAMPLE_SIZE).then(books => {
-      setSeedBooks(books);
-      setBooksLoading(false);
-    });
+    fetchSeedBooks(BOOK_SAMPLE_SIZE)
+      .then(books => {
+        setSeedBooks(books);
+        setBooksLoading(false);
+        if (books.length === 0) setStep('genres'); // skip book step if no seed books
+      })
+      .catch(() => {
+        setBooksLoading(false);
+        setStep('genres'); // degrade gracefully — skip to genre selection
+      });
   }, []);
 
   const reactToBook = (bookId: string, isLike: boolean) => {
@@ -47,10 +54,15 @@ export default function OnboardingScreen() {
 
   const finish = async () => {
     setSaving(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setSaving(false); return; }
+    setError(null);
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      setSaving(false);
+      setError('Session expired. Please sign in again.');
+      return;
+    }
 
-    await supabase.from('taste_profiles').upsert({
+    const { error: upsertError } = await supabase.from('taste_profiles').upsert({
       user_id: user.id,
       genres: selectedGenres,
       pace,
@@ -58,6 +70,11 @@ export default function OnboardingScreen() {
       liked_book_ids: liked,
       disliked_book_ids: disliked,
     });
+    if (upsertError) {
+      setSaving(false);
+      setError(upsertError.message);
+      return;
+    }
 
     await supabase.functions.invoke('match-user', { body: { user_id: user.id } });
     router.replace('/(tabs)/club');
@@ -136,6 +153,7 @@ export default function OnboardingScreen() {
           <Text style={s.paceTxt}>{p.label}</Text>
         </TouchableOpacity>
       ))}
+      {error && <Text style={s.errorText}>{error}</Text>}
       <TouchableOpacity style={[s.nextBtn, saving && s.nextBtnDisabled]} onPress={finish} disabled={saving}>
         <Text style={s.nextTxt}>{saving ? 'Finding your club…' : 'Find my club →'}</Text>
       </TouchableOpacity>
@@ -168,4 +186,5 @@ const s = StyleSheet.create({
   nextBtn: { backgroundColor: '#2D6A4F', padding: 16, borderRadius: 12, alignItems: 'center', marginTop: 16 },
   nextBtnDisabled: { opacity: 0.6 },
   nextTxt: { color: '#fff', fontWeight: '600', fontSize: 16 },
+  errorText: { color: 'red', marginBottom: 8, textAlign: 'center' },
 });

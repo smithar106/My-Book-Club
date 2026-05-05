@@ -32,7 +32,7 @@ export default function RootLayout() {
           else router.replace('/(auth)/onboarding');
         });
     }
-  }, [session, loading]);
+  }, [session, loading, router, segments]);
 
   return <Slot />;
 }

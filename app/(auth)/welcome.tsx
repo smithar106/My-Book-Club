@@ -10,6 +10,10 @@ export default function WelcomeScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleAuth = async () => {
+    if (!email.trim() || !password) {
+      setError('Please enter your email and password.');
+      return;
+    }
     setError(null);
     setLoading(true);
     const { error: e } = mode === 'signup'
