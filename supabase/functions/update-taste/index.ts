@@ -4,6 +4,9 @@ import type { TasteProfile } from '../../src/lib/types.ts';
 
 Deno.serve(async (req) => {
   const { user_id, book_id, action, genres } = await req.json();
+  if (!user_id || !book_id || !['like', 'dislike'].includes(action)) {
+    return new Response(JSON.stringify({ error: 'user_id, book_id, and valid action are required' }), { status: 400 });
+  }
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!

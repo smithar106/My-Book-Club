@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
 
   const { data: profiles } = await supabase
     .from('taste_profiles').select('*').in('user_id', memberIds);
-  const allGenres = [...new Set((profiles as TasteProfile[]).flatMap(p => p.genres))];
+  const allGenres = [...new Set(((profiles ?? []) as TasteProfile[]).flatMap(p => p.genres))];
 
   const { data: books } = await mnb.from('books')
     .select('id, title, author_id, description, cover_url, genres, tags, themes, page_count, popularity_score, taste_vector')
